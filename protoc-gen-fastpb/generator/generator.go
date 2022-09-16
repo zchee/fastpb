@@ -48,7 +48,8 @@ func GenerateFile(gen *protogen.Plugin, file *protogen.File) *protogen.Generated
 		}
 		alias := g.QualifiedGoIdent(protogen.GoIdent{GoImportPath: impFile.GoImportPath})
 		alias = strings.TrimSuffix(alias, ".")
-		invalidVars = append(invalidVars, fmt.Sprintf("var _ = %s.File_%s_proto", alias, alias))
+		name := strings.ReplaceAll(string(impFile.Desc.FullName()), ".", "_")
+		invalidVars = append(invalidVars, fmt.Sprintf("var _ = %s.File_%s_proto", alias, name))
 	}
 
 	// body
