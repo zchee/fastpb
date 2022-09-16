@@ -40,6 +40,7 @@ func main() {
 	}
 
 	protogen.Options{}.Run(func(gen *protogen.Plugin) error {
+		gen.SupportedFeatures = gengo.SupportedFeatures
 		// check: only support proto3 now
 		for _, f := range gen.Files {
 			if f.Desc.Syntax() != protoreflect.Proto3 {
@@ -52,7 +53,6 @@ func main() {
 				genfastpb.GenerateFile(gen, f)
 			}
 		}
-		gen.SupportedFeatures = gengo.SupportedFeatures
 		return nil
 	})
 }

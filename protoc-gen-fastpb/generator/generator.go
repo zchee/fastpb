@@ -16,9 +16,12 @@ package generator
 
 import (
 	"fmt"
+	"go/token"
 	"path/filepath"
 	"sort"
 	"strings"
+	"unicode"
+	"unicode/utf8"
 	_ "unsafe"
 
 	"google.golang.org/protobuf/compiler/protogen"
@@ -27,6 +30,26 @@ import (
 
 	"github.com/cloudwego/fastpb"
 )
+
+// GoSanitized converts a string to a valid Go identifier.
+func GoSanitized(s string) string {
+	// Sanitize the input to the set of valid characters,
+	// which must be '_' or be in the Unicode L or N categories.
+	s = strings.Map(func(r rune) rune {
+		if unicode.IsLetter(r) || unicode.IsDigit(r) {
+			return r
+		}
+		return '_'
+	}, s)
+
+	// Prepend '_' in the event of a Go keyword conflict or if
+	// the identifier is invalid (does not start in the Unicode L category).
+	r, _ := utf8.DecodeRuneInString(s)
+	if token.Lookup(s).IsKeyword() || !unicode.IsLetter(r) {
+		return "_" + s
+	}
+	return s
+}
 
 func GenerateFile(gen *protogen.Plugin, file *protogen.File) *protogen.GeneratedFile {
 	filename := file.GeneratedFilenamePrefix + ".pb.fast.go"
@@ -48,8 +71,12 @@ func GenerateFile(gen *protogen.Plugin, file *protogen.File) *protogen.Generated
 		}
 		alias := g.QualifiedGoIdent(protogen.GoIdent{GoImportPath: impFile.GoImportPath})
 		alias = strings.TrimSuffix(alias, ".")
-		name := strings.ReplaceAll(string(impFile.Desc.FullName()), ".", "_")
-		invalidVars = append(invalidVars, fmt.Sprintf("var _ = %s.File_%s_proto", alias, name))
+		// descIdent := protogen.GoIdent{
+		// 	GoName:       "File_" + GoSanitized(protodesc.ToFileDescriptorProto(imp.FileDescriptor).GetName()),
+		// 	GoImportPath: impFile.GoImportPath,
+		// }
+		// invalidVars = append(invalidVars, fmt.Sprintf("var _ = %s.%s", alias, alias))
+		invalidVars = append(invalidVars, fmt.Sprintf("var _ = %s.File_%s_proto", alias, alias))
 	}
 
 	// body
@@ -90,9 +117,9 @@ func GenerateFile(gen *protogen.Plugin, file *protogen.File) *protogen.Generated
 		ps[i].GenFastConst(g)
 	}
 	// gen invalid vars
-	for i := range invalidVars {
-		g.P(invalidVars[i])
-	}
+	// for i := range invalidVars {
+	// 	g.P(invalidVars[i])
+	// }
 	return g
 }
 
