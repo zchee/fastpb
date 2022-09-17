@@ -39,16 +39,18 @@ func GenerateFile(gen *protogen.Plugin, file *protogen.File) *protogen.Generated
 	// imports
 	g.QualifiedGoIdent(protogen.GoIdent{GoImportPath: "fmt"})
 	g.QualifiedGoIdent(protogen.GoIdent{GoImportPath: "github.com/cloudwego/fastpb"})
-	var invalidVars []string
+	// var invalidVars []string
 	for i, imps := 0, file.Desc.Imports(); i < imps.Len(); i++ {
 		imp := imps.Get(i)
 		impFile, ok := gen.FilesByPath[imp.Path()]
 		if !ok || impFile.GoImportPath == file.GoImportPath || imp.IsWeak {
 			continue
 		}
-		alias := g.QualifiedGoIdent(protogen.GoIdent{GoImportPath: impFile.GoImportPath})
-		alias = strings.TrimSuffix(alias, ".")
-		invalidVars = append(invalidVars, fmt.Sprintf("var _ = %s.File_%s_proto", alias, alias))
+		g.Import(impFile.GoImportPath)
+		// alias := g.QualifiedGoIdent(protogen.GoIdent{GoImportPath: impFile.GoImportPath})
+		// alias = strings.TrimSuffix(alias, ".")
+		// name := string(protogen.GoIdent{GoImportPath: impFile.GoImportPath}.GoImportPath)
+		// invalidVars = append(invalidVars, fmt.Sprintf("var _ = %s.File_%s_proto", alias, name))
 	}
 
 	// body
@@ -89,9 +91,9 @@ func GenerateFile(gen *protogen.Plugin, file *protogen.File) *protogen.Generated
 		ps[i].GenFastConst(g)
 	}
 	// gen invalid vars
-	for i := range invalidVars {
-		g.P(invalidVars[i])
-	}
+	// for i := range invalidVars {
+	// 	g.P(invalidVars[i])
+	// }
 	return g
 }
 
